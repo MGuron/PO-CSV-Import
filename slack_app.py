@@ -6,6 +6,8 @@ import requests
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_sdk.errors import SlackApiError
+from slack_sdk.http_retry.builtin_handlers import ConnectionErrorRetryHandler
+from slack_sdk.web import WebClient
 
 from importWCPData import filter_shopify_product, get_shopify_product
 
@@ -147,8 +149,12 @@ def handle_upload_submission(ack, body, view, client):
 
 
 def create_app():
-    app = App(
+    client = WebClient(
         token=os.environ["SLACK_BOT_TOKEN"],
+        retry_handlers=[ConnectionErrorRetryHandler(max_retry_count=3)],
+    )
+    app = App(
+        client=client,
         signing_secret=os.environ["SLACK_SIGNING_SECRET"],
     )
     app.shortcut("upload_shopify_csv")(open_upload_form)
