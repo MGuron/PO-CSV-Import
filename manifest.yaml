@@ -1,0 +1,35 @@
+_metadata:
+  major_version: 1
+  minor_version: 1
+
+display_information:
+  name: FRCBom CSV Upload
+  description: Upload FRCBom COTS CSVs into the PO Sheet.
+  background_color: "#132be8"
+  long_description: Look up Shopify products from a two-column handle and quantity CSV, then reply with product titles, quantities, links, and prices.
+
+features:
+  bot_user:
+    display_name: FRCBom CSV Upload
+    always_online: false
+  shortcuts:
+    - name: Import Shopify CSV
+      type: global
+      callback_id: upload_shopify_csv
+      description: Upload a Shopify handle and quantity CSV
+
+oauth_config:
+  scopes:
+    bot:
+      - files:read
+      - chat:write
+      - channels:read
+      - commands
+
+settings:
+  event_subscriptions: {}
+  interactivity:
+    is_enabled: true
+  org_deploy_enabled: false
+  socket_mode_enabled: true
+  token_rotation_enabled: false
