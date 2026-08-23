@@ -132,7 +132,10 @@ def handle_upload_submission(ack, body, view, client):
 
 
 def create_app():
-    app = App(token=os.environ["SLACK_BOT_TOKEN"])
+    app = App(
+        token=os.environ["SLACK_BOT_TOKEN"],
+        signing_secret=os.environ["SLACK_SIGNING_SECRET"],
+    )
     app.shortcut("upload_shopify_csv")(open_upload_form)
     app.view("shopify_csv_upload")(handle_upload_submission)
     return app

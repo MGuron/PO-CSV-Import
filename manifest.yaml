@@ -30,6 +30,7 @@ settings:
   event_subscriptions: {}
   interactivity:
     is_enabled: true
+    request_url: https://YOUR-VERCEL-DOMAIN/api/index
   org_deploy_enabled: false
-  socket_mode_enabled: true
+  socket_mode_enabled: false
   token_rotation_enabled: false
