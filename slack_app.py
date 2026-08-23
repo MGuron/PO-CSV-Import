@@ -5,6 +5,7 @@ import os
 import requests
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
+from slack_sdk.errors import SlackApiError
 
 from importWCPData import filter_shopify_product, get_shopify_product
 
@@ -77,7 +78,12 @@ def extract_file_id(view_state):
     file_ids = file_value.get("files", [])
     if not file_ids:
         raise ValueError("Please select a CSV file.")
-    return file_ids[0]
+    file_id = file_ids[0]
+    if isinstance(file_id, dict):
+        file_id = file_id.get("id")
+    if not file_id:
+        raise ValueError("Slack did not return a usable file ID.")
+    return file_id
 
 
 def open_upload_form(ack, body, client):
@@ -124,6 +130,15 @@ def handle_upload_submission(ack, body, view, client):
         file_id = extract_file_id(state)
         channel_id = state["destination"]["channel"]["selected_conversation"]
         process_file(file_id, channel_id, client)
+    except SlackApiError as error:
+        if error.response.get("error") == "file_not_found":
+            message = (
+                "Slack could not access that upload. Reinstall the app after granting "
+                "files:read, confirm the bot is in the destination channel, and try again."
+            )
+        else:
+            message = f"Slack returned an error: {error.response.get('error', error)}"
+        client.chat_postMessage(channel=body["user"]["id"], text=message)
     except (KeyError, requests.RequestException, ValueError) as error:
         client.chat_postMessage(
             channel=body["user"]["id"],
