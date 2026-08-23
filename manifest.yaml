@@ -27,7 +27,8 @@ oauth_config:
       - commands
 
 settings:
-  event_subscriptions: {}
+  event_subscriptions:
+    request_url: https://po-csv-import.vercel.app/api/index
   interactivity:
     is_enabled: true
     request_url: https://po-csv-import.vercel.app/api/index
