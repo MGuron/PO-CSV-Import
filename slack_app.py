@@ -70,6 +70,7 @@ def process_file(file_id, client):
 
     results = products_from_csv(download_slack_file(file_info))
     append_products_to_sheet(results)
+    return results
 
 #Append product results to the configured Google worksheet.
 def append_products_to_sheet(results):
@@ -103,11 +104,13 @@ def extract_file_id(view_state):
 # Create slack upload form
 def open_upload_form(ack, body, client):
     ack()
+    channel_id = body.get("channel", {}).get("id")
     client.views_open(
         trigger_id=body["trigger_id"],
         view={
             "type": "modal",
             "callback_id": "shopify_csv_upload",
+            "private_metadata": json.dumps({"channel_id": channel_id}),
             "title": {"type": "plain_text", "text": "Import CSV"},
             "submit": {"type": "plain_text", "text": "Import"},
             "close": {"type": "plain_text", "text": "Cancel"},
@@ -133,7 +136,22 @@ def handle_upload_submission(ack, body, view, client):
     try:
         state = view["state"]["values"]
         file_id = extract_file_id(state)
-        process_file(file_id, client)
+        results = process_file(file_id, client)
+        metadata = json.loads(view.get("private_metadata", "{}"))
+        channel_id = metadata.get("channel_id")
+        if channel_id:
+            entries = "\n".join(
+                f"> `{result['Title']}` |  link: <{result['Link']}|open> | "
+                f"Qty: `{result['Num']}` | Price: `{result['Price']}`"
+                for result in results
+            )
+            client.chat_postMessage(
+                channel=channel_id,
+                text=(
+                    f"<@{body['user']['id']}> imported a CSV file into the PO Sheet.\n"
+                    f"*Imported entries: *\n{entries}"
+                ),
+            )
     except SlackApiError as error:
         if error.response.get("error") == "file_not_found":
             message = (
