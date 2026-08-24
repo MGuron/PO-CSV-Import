@@ -1,4 +1,4 @@
-# Shopify CSV Slack app
+# FRCBOM CSV to PO Sheet Slack app
 
 This Slack app provides allows users to upload CSVs generated from FRCBOM into the PO Spreadsheet. This keeps all purchases tracked in one place, while allowing us to use quick-ordering features and easily move data between systems
 

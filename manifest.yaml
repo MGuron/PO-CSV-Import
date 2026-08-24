@@ -13,10 +13,10 @@ features:
     display_name: FRCBom CSV Upload
     always_online: false
   shortcuts:
-    - name: Import Shopify CSV
+    - name: Import FRCBom CSV
       type: global
       callback_id: upload_shopify_csv
-      description: Upload a Shopify handle and quantity CSV
+      description: Upload a vendor CSV from FRCBom into the PO Sheet.
 
 oauth_config:
   scopes:
