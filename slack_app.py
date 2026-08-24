@@ -156,6 +156,8 @@ def create_app():
     app = App(
         client=client,
         signing_secret=os.environ["SLACK_SIGNING_SECRET"],
+        process_before_response=True,
+        token_verification_enabled=False,
     )
     app.shortcut("upload_shopify_csv")(open_upload_form)
     app.view("shopify_csv_upload")(handle_upload_submission)
