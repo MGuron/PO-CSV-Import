@@ -79,12 +79,45 @@ def append_products_to_sheet(results):
     spreadsheet = sheets_client.open_by_key(os.environ["GOOGLE_SHEET_ID"])
     worksheet = spreadsheet.worksheet(os.getenv("GOOGLE_WORKSHEET_NAME", "Sheet1"))
 
-    headers = ["Title", "Num", "Link", "Price"]
-    if not worksheet.row_values(1):
+    headers = worksheet.row_values(1)
+    if not headers:
+        headers = ["Title", "Num", "Link", "Price"]
         worksheet.append_row(headers, value_input_option="USER_ENTERED")
 
+    field_aliases = {
+        "title": "Title",
+        "item": "Title",
+        "product": "Title",
+        "product title": "Title",
+        "num": "Num",
+        "qty": "Num",
+        "quantity": "Num",
+        "link": "Link",
+        "url": "Link",
+        "product link": "Link",
+        "price": "Price",
+    }
+    fields_by_header = {
+        header: field_aliases.get(header.strip().lower())
+        for header in headers
+    }
+    missing_fields = {
+        field for field in ("Title", "Num", "Link", "Price")
+        if field not in fields_by_header.values()
+    }
+    if missing_fields:
+        raise ValueError(
+            "Google Sheet is missing columns: " + ", ".join(sorted(missing_fields))
+        )
+
     worksheet.append_rows(
-        [[result[field] for field in headers] for result in results],
+        [
+            [
+                result[field] if field else ""
+                for field in (fields_by_header[header] for header in headers)
+            ]
+            for result in results
+        ],
         value_input_option="USER_ENTERED",
     )
 
