@@ -79,7 +79,8 @@ def append_products_to_sheet(results):
     spreadsheet = sheets_client.open_by_key(os.environ["GOOGLE_SHEET_ID"])
     worksheet = spreadsheet.worksheet(os.getenv("GOOGLE_WORKSHEET_NAME", "Sheet1"))
 
-    headers = worksheet.row_values(1)
+    header_rows = worksheet.get("1:1", pad_values=True)
+    headers = header_rows[0] if header_rows else []
     if not headers:
         headers = ["Title", "Num", "Link", "Price"]
         worksheet.append_row(headers, value_input_option="USER_ENTERED")
@@ -97,24 +98,48 @@ def append_products_to_sheet(results):
         "product link": "Link",
         "price": "Price",
     }
-    fields_by_header = {
-        header: field_aliases.get(header.strip().lower())
+    fields_by_column = [
+        field_aliases.get(header.strip().lower())
         for header in headers
-    }
+    ]
     missing_fields = {
         field for field in ("Title", "Num", "Link", "Price")
-        if field not in fields_by_header.values()
+        if field not in fields_by_column
     }
     if missing_fields:
         raise ValueError(
             "Google Sheet is missing columns: " + ", ".join(sorted(missing_fields))
         )
 
-    worksheet.append_rows(
+    field_columns = {
+        field: column_number
+        for column_number, field in enumerate(fields_by_column, start=1)
+        if field
+    }
+    first_column = min(field_columns.values())
+    last_column = max(field_columns.values())
+    next_row = len(worksheet.get_all_values()) + 1
+
+    def column_letter(column_number):
+        letters = ""
+        while column_number:
+            column_number, remainder = divmod(column_number - 1, 26)
+            letters = chr(65 + remainder) + letters
+        return letters
+
+    worksheet.update(
+        f"{column_letter(first_column)}{next_row}:{column_letter(last_column)}{next_row}",
         [
             [
-                result[field] if field else ""
-                for field in (fields_by_header[header] for header in headers)
+                next(
+                    (
+                        result[field]
+                        for column_number, field in enumerate(fields_by_column, start=1)
+                        if column_number == target_column and field
+                    ),
+                    "",
+                )
+                for target_column in range(first_column, last_column + 1)
             ]
             for result in results
         ],
