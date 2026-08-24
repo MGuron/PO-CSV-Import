@@ -21,7 +21,8 @@ def products_from_csv(csv_text):
     if not rows:
         raise ValueError("The CSV file is empty.")
 
-    if [column.strip().lower() for column in rows[0]] == ["handle", "quantity"]:
+    header = [column.strip().lower() for column in rows[0]]
+    if header in (["handle", "quantity"], ["sku", "qty"]):
         rows = rows[1:]
 
     results = []
@@ -32,6 +33,7 @@ def products_from_csv(csv_text):
             raise ValueError(f"Row {row_number} must contain exactly two columns.")
 
         handle, quantity_text = (cell.strip() for cell in row)
+        handle = handle.lower()
         if not handle:
             raise ValueError(f"Row {row_number} has no product handle.")
         try:
