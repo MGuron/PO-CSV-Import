@@ -16,9 +16,8 @@ from importWCPData import filter_shopify_product, get_shopify_product
 
 STORE_URL = os.environ["SHOPIFY_STORE_URL"]
 
-
+#Fetch and format Shopify products from a two-column CSV. Currenty works for WCP only
 def products_from_csv(csv_text):
-    """Fetch and format Shopify products from a two-column CSV."""
     rows = list(csv.reader(io.StringIO(csv_text)))
     if not rows:
         raise ValueError("The CSV file is empty.")
@@ -52,9 +51,8 @@ def products_from_csv(csv_text):
         raise ValueError("The CSV contains no product rows.")
     return results
 
-
+#Download a private Slack file using the bot token.
 def download_slack_file(file_info):
-    """Download a private Slack file using the bot token."""
     response = requests.get(
         file_info["url_private_download"],
         headers={"Authorization": f"Bearer {os.environ['SLACK_BOT_TOKEN']}"},
@@ -73,9 +71,8 @@ def process_file(file_id, client):
     results = products_from_csv(download_slack_file(file_info))
     append_products_to_sheet(results)
 
-
+#Append product results to the configured Google worksheet.
 def append_products_to_sheet(results):
-    """Append product results to the configured Google worksheet."""
     credentials = json.loads(os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"])
     sheets_client = gspread.service_account_from_dict(credentials)
     spreadsheet = sheets_client.open_by_key(os.environ["GOOGLE_SHEET_ID"])
@@ -90,9 +87,8 @@ def append_products_to_sheet(results):
         value_input_option="USER_ENTERED",
     )
 
-
+#Support Slack's file input state shape while keeping validation explicit.
 def extract_file_id(view_state):
-    """Support Slack's file input state shape while keeping validation explicit."""
     file_value = view_state["csv_file"]["upload"]
     file_ids = file_value.get("files", [])
     if not file_ids:
@@ -104,7 +100,7 @@ def extract_file_id(view_state):
         raise ValueError("Slack did not return a usable file ID.")
     return file_id
 
-
+# Create slack upload form
 def open_upload_form(ack, body, client):
     ack()
     client.views_open(

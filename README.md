@@ -1,11 +1,10 @@
 # Shopify CSV Slack app
 
-This Slack app provides a form-based workflow for uploading a two-column CSV and looking up each Shopify product using its handle.
+This Slack app provides allows users to upload CSVs generated from FRCBOM into the PO Spreadsheet. This keeps all purchases tracked in one place, while allowing us to use quick-ordering features and easily move data between systems
 
-The CSV may omit headers:
 
 ```csv
-handle,quantity
+SKU,QTY
 wcp-0063,2
 wcp-0100,1
 ```
@@ -17,9 +16,9 @@ wcp-0100,1
 3. Install dependencies with `python -m pip install -r requirements.txt`.
 4. Deploy the repository with Vercel. Vercel automatically uses [api/index.py](api/index.py) as the Python function entrypoint.
 5. In Slack, set the Interactivity Request URL to `https://YOUR-VERCEL-DOMAIN/api/index`.
-6. Add `SLACK_BOT_TOKEN`, `SLACK_SIGNING_SECRET`, `SHOPIFY_STORE_URL`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_SHEET_ID`, and `GOOGLE_WORKSHEET_NAME` as Vercel environment variables.
+6. Add `SLACK_BOT_TOKEN`, `SLACK_SIGNING_SECRET`, `SHOPIFY_STORE_URL`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_SHEET_ID`, and `GOOGLE_WORKSHEET_NAME` as Vercel environment variables. The 
 7. Share the Google Sheet with the service account email from `GOOGLE_SERVICE_ACCOUNT_JSON` as an Editor.
 
-For local development, set the variables in `.env.example` in your shell and run `python slack_app.py` with `SLACK_APP_TOKEN` for Socket Mode.
+Because the app creates a new context with file upload, you need to deploy the application for a persistent lifetime. Running the app locally in your python development environment will not work.
 
-Use the **Import Shopify CSV** global shortcut in Slack and select the `.csv` file. The app appends the product title, quantity, clickable product link, and price in dollars to the configured Google worksheet.
+Use the **Import Order CSV**  shortcut in the #purchasing channel Slack and select the `.csv` file of interest. The app appends the product title, quantity, clickable product link, and price in dollars to the configured Google sheet.

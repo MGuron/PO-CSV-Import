@@ -4,12 +4,9 @@ from urllib.parse import quote
 
 
 def get_shopify_product(store_url, handle):
-    """
-    Get public Shopify product information using the product handle. For WCP, this is the SKU (E.g. "wcp-0063").
+    #Get public Shopify product information using the product handle. For WCP, this is the SKU (E.g. "wcp-0063").
+    #Returns: dict containing all of the Shopify product information
 
-    Returns:
-        dict containing all of the Shopify product information
-    """
 
     store_url = store_url.rstrip("/")
     url = f"{store_url}/products/{handle}.js"
@@ -27,7 +24,7 @@ def get_shopify_product(store_url, handle):
     return response.json()
 
 def cents_to_dollars(cents):
-    """Convert cents to a dollar string formatted as X.XX."""
+    #Convert cents to a dollar string formatted as X.XX.
     try:
         dollars = Decimal(cents) / Decimal(100)
         return f"{dollars:,.2f}"
