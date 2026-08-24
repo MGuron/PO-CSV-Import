@@ -119,6 +119,7 @@ def append_products_to_sheet(results):
     first_column = min(field_columns.values())
     last_column = max(field_columns.values())
     next_row = len(worksheet.get_all_values()) + 1
+    final_row = next_row + len(results) - 1
 
     def column_letter(column_number):
         letters = ""
@@ -128,7 +129,7 @@ def append_products_to_sheet(results):
         return letters
 
     worksheet.update(
-        f"{column_letter(first_column)}{next_row}:{column_letter(last_column)}{next_row}",
+        f"{column_letter(first_column)}{next_row}:{column_letter(last_column)}{final_row}",
         [
             [
                 next(
