@@ -104,13 +104,11 @@ def extract_file_id(view_state):
 # Create slack upload form
 def open_upload_form(ack, body, client):
     ack()
-    channel_id = body.get("channel", {}).get("id")
     client.views_open(
         trigger_id=body["trigger_id"],
         view={
             "type": "modal",
             "callback_id": "shopify_csv_upload",
-            "private_metadata": json.dumps({"channel_id": channel_id}),
             "title": {"type": "plain_text", "text": "Import CSV"},
             "submit": {"type": "plain_text", "text": "Import"},
             "close": {"type": "plain_text", "text": "Cancel"},
@@ -126,6 +124,18 @@ def open_upload_form(ack, body, client):
                         "max_files": 1,
                     },
                 },
+                {
+                    "type": "input",
+                    "block_id": "destination",
+                    "label": {"type": "plain_text", "text": "Post confirmation in"},
+                    "element": {
+                        "type": "conversations_select",
+                        "action_id": "channel",
+                        "default_to_current_conversation": True,
+                        "response_url_enabled": True,
+                        "filter": {"include": ["public"]},
+                    },
+                },
             ],
         },
     )
@@ -137,21 +147,19 @@ def handle_upload_submission(ack, body, view, client):
         state = view["state"]["values"]
         file_id = extract_file_id(state)
         results = process_file(file_id, client)
-        metadata = json.loads(view.get("private_metadata", "{}"))
-        channel_id = metadata.get("channel_id")
-        if channel_id:
-            entries = "\n".join(
-                f"> `{result['Title']}` |  link: <{result['Link']}|open> | "
-                f"Qty: `{result['Num']}` | Price: `{result['Price']}`"
-                for result in results
-            )
-            client.chat_postMessage(
-                channel=channel_id,
-                text=(
-                    f"<@{body['user']['id']}> imported a CSV file into the PO Sheet.\n"
-                    f"*Imported entries: *\n{entries}"
-                ),
-            )
+        channel_id = state["destination"]["channel"]["selected_conversation"]
+        entries = "\n".join(
+            f"> `{result['Title']}` | link: <{result['Link']}|open> | "
+            f"Qty: `{result['Num']}` | Price: `{result['Price']}`"
+            for result in results
+        )
+        client.chat_postMessage(
+            channel=channel_id,
+            text=(
+                f"<@{body['user']['id']}> imported a CSV file into the PO Sheet.\n"
+                f"*Imported entries:*\n{entries}"
+            ),
+        )
     except SlackApiError as error:
         if error.response.get("error") == "file_not_found":
             message = (
