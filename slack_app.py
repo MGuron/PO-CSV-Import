@@ -1,4 +1,5 @@
 import csv
+from datetime import datetime
 import io
 import json
 import os
@@ -222,7 +223,9 @@ def handle_upload_submission(ack, body, view, client):
     try:
         state = view["state"]["values"]
         file_id = extract_file_id(state)
-        needed_by = state["needed_by"]["date"]["selected_date"]
+        needed_by = datetime.strptime(
+            state["needed_by"]["date"]["selected_date"], "%Y-%m-%d"
+        ).strftime("%m/%d/%Y")
         user_id = body["user"]["id"]
         user_info = client.users_info(user=user_id)["user"]
         requested_by = (
