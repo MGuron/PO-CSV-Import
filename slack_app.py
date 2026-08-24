@@ -148,14 +148,17 @@ def handle_upload_submission(ack, body, view, client):
         file_id = extract_file_id(state)
         results = process_file(file_id, client)
         channel_id = state["destination"]["channel"]["selected_conversation"]
+        mention = os.getenv("SLACK_IMPORT_MENTION", "").strip()
+        mention_prefix = f"{mention} " if mention else ""
         entries = "\n".join(
             f"> `{result['Title']}` | link: <{result['Link']}|open> | "
-            f"Qty: `{result['Num']}` | Price: `{result['Price']}`"
+            f"Qty: `{result['Num']}` | Price: `${result['Price']}`"
             for result in results
         )
         client.chat_postMessage(
             channel=channel_id,
             text=(
+                f"{mention_prefix}"
                 f"<@{body['user']['id']}> imported a CSV file into the PO Sheet.\n"
                 f"*Imported entries:*\n{entries}"
             ),
