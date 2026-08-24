@@ -62,13 +62,16 @@ def download_slack_file(file_info):
     return response.text
 
 
-def process_file(file_id, client):
+def process_file(file_id, client, needed_by, requested_by):
     file_info = client.files_info(file=file_id)["file"]
     filename = file_info.get("name", "")
     if not filename.lower().endswith(".csv"):
         raise ValueError("Please select a CSV file.")
 
     results = products_from_csv(download_slack_file(file_info))
+    for result in results:
+        result["Needed By"] = needed_by
+        result["Requested By"] = requested_by
     append_products_to_sheet(results)
     return results
 
@@ -82,7 +85,7 @@ def append_products_to_sheet(results):
     header_rows = worksheet.get("1:1", pad_values=True)
     headers = header_rows[0] if header_rows else []
     if not headers:
-        headers = ["Title", "Num", "Link", "Price"]
+        headers = ["Title", "Num", "Link", "Price", "Needed By", "Requested By"]
         worksheet.append_row(headers, value_input_option="USER_ENTERED")
 
     field_aliases = {
@@ -98,13 +101,17 @@ def append_products_to_sheet(results):
         "product link": "Link",
         "price": "Price",
         "per": "Price",
+        "needed by": "Needed By",
+        "needed_by": "Needed By",
+        "requested by": "Requested By",
+        "requested_by": "Requested By",
     }
     fields_by_column = [
         field_aliases.get(header.strip().lower())
         for header in headers
     ]
     missing_fields = {
-        field for field in ("Title", "Num", "Link", "Price")
+        field for field in ("Title", "Num", "Link", "Price", "Needed By", "Requested By")
         if field not in fields_by_column
     }
     if missing_fields:
@@ -196,6 +203,15 @@ def open_upload_form(ack, body, client):
                         "filter": {"include": ["public"]},
                     },
                 },
+                {
+                    "type": "input",
+                    "block_id": "needed_by",
+                    "label": {"type": "plain_text", "text": "Needed by"},
+                    "element": {
+                        "type": "datepicker",
+                        "action_id": "date",
+                    },
+                },
             ],
         },
     )
@@ -206,13 +222,22 @@ def handle_upload_submission(ack, body, view, client):
     try:
         state = view["state"]["values"]
         file_id = extract_file_id(state)
-        results = process_file(file_id, client)
+        needed_by = state["needed_by"]["date"]["selected_date"]
+        user_id = body["user"]["id"]
+        user_info = client.users_info(user=user_id)["user"]
+        requested_by = (
+            user_info.get("profile", {}).get("display_name")
+            or user_info.get("real_name")
+            or user_id
+        )
+        results = process_file(file_id, client, needed_by, requested_by)
         channel_id = state["destination"]["channel"]["selected_conversation"]
         mention = os.getenv("SLACK_IMPORT_MENTION", "").strip()
         mention_prefix = f"{mention} " if mention else ""
         entries = "\n".join(
             f"> `{result['Title']}` | link: <{result['Link']}|open> | "
-            f"Qty: `{result['Num']}` | Price: `${result['Price']}`"
+                f"Qty: `{result['Num']}` | Price: `${result['Price']}` | "
+                f"Needed by: `{result['Needed By']}` | Requested by: `{result['Requested By']}`"
             for result in results
         )
         client.chat_postMessage(
