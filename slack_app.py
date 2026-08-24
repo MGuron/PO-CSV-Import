@@ -109,7 +109,7 @@ def open_upload_form(ack, body, client):
         view={
             "type": "modal",
             "callback_id": "shopify_csv_upload",
-            "title": {"type": "plain_text", "text": "Import CSV"},
+            "title": {"type": "plain_text", "text": "Import Vendor CSV"},
             "submit": {"type": "plain_text", "text": "Import"},
             "close": {"type": "plain_text", "text": "Cancel"},
             "blocks": [
