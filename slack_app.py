@@ -97,6 +97,7 @@ def append_products_to_sheet(results):
         "url": "Link",
         "product link": "Link",
         "price": "Price",
+        "per": "Price",
     }
     fields_by_column = [
         field_aliases.get(header.strip().lower())
