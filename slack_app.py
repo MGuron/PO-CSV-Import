@@ -81,7 +81,7 @@ def append_products_to_sheet(results):
     spreadsheet = sheets_client.open_by_key(os.environ["GOOGLE_SHEET_ID"])
     worksheet = spreadsheet.worksheet(os.getenv("GOOGLE_WORKSHEET_NAME", "Sheet1"))
 
-    headers = ["Title", "Quantity", "Link", "Price"]
+    headers = ["Title", "Num", "Link", "Price"]
     if not worksheet.row_values(1):
         worksheet.append_row(headers, value_input_option="USER_ENTERED")
 
