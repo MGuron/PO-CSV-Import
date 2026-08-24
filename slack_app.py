@@ -1,7 +1,9 @@
 import csv
 import io
+import json
 import os
 
+import gspread
 import requests
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
@@ -62,18 +64,31 @@ def download_slack_file(file_info):
     return response.text
 
 
-def process_file(file_id, channel_id, client):
+def process_file(file_id, client):
     file_info = client.files_info(file=file_id)["file"]
     filename = file_info.get("name", "")
     if not filename.lower().endswith(".csv"):
         raise ValueError("Please select a CSV file.")
 
     results = products_from_csv(download_slack_file(file_info))
-    lines = [
-        f"<{result['Link']}|{result['Title']}> - {result['Quantity']} x {result['Price']}"
-        for result in results
-    ]
-    client.chat_postMessage(channel=channel_id, text="\n".join(lines))
+    append_products_to_sheet(results)
+
+
+def append_products_to_sheet(results):
+    """Append product results to the configured Google worksheet."""
+    credentials = json.loads(os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"])
+    sheets_client = gspread.service_account_from_dict(credentials)
+    spreadsheet = sheets_client.open_by_key(os.environ["GOOGLE_SHEET_ID"])
+    worksheet = spreadsheet.worksheet(os.getenv("GOOGLE_WORKSHEET_NAME", "Sheet1"))
+
+    headers = ["Title", "Quantity", "Link", "Price"]
+    if not worksheet.row_values(1):
+        worksheet.append_row(headers, value_input_option="USER_ENTERED")
+
+    worksheet.append_rows(
+        [[result[field] for field in headers] for result in results],
+        value_input_option="USER_ENTERED",
+    )
 
 
 def extract_file_id(view_state):
@@ -112,16 +127,6 @@ def open_upload_form(ack, body, client):
                         "max_files": 1,
                     },
                 },
-                {
-                    "type": "input",
-                    "block_id": "destination",
-                    "label": {"type": "plain_text", "text": "Post results in"},
-                    "element": {
-                        "type": "conversations_select",
-                        "action_id": "channel",
-                        "filter": {"include": ["public"]},
-                    },
-                },
             ],
         },
     )
@@ -132,8 +137,7 @@ def handle_upload_submission(ack, body, view, client):
     try:
         state = view["state"]["values"]
         file_id = extract_file_id(state)
-        channel_id = state["destination"]["channel"]["selected_conversation"]
-        process_file(file_id, channel_id, client)
+        process_file(file_id, client)
     except SlackApiError as error:
         if error.response.get("error") == "file_not_found":
             message = (
@@ -143,7 +147,7 @@ def handle_upload_submission(ack, body, view, client):
         else:
             message = f"Slack returned an error: {error.response.get('error', error)}"
         client.chat_postMessage(channel=body["user"]["id"], text=message)
-    except (KeyError, requests.RequestException, ValueError) as error:
+    except (KeyError, requests.RequestException, ValueError, gspread.exceptions.GSpreadException) as error:
         client.chat_postMessage(
             channel=body["user"]["id"],
             text=f"I couldn't process that CSV: {error}",

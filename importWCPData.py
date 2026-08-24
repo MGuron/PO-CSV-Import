@@ -49,7 +49,7 @@ def filter_shopify_product(product, quantity, store_url):
 
     return {
         "Title": product.get("title"),
-        "Quantity": quantity,
+        "Num": quantity,
         "Link": f"{store_url.rstrip('/')}/products/{quote(handle, safe='')}" if handle else None,
         "Price": price,
     }
