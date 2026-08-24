@@ -26,6 +26,13 @@ def get_shopify_product(store_url, handle):
     
     return response.json()
 
+def cents_to_dollars(cents):
+    """Convert cents to a dollar string formatted as X.XX."""
+    try:
+        dollars = Decimal(cents) / Decimal(100)
+        return f"{dollars:,.2f}"
+    except (InvalidOperation, ValueError):
+        return f"{cents}" if cents else "0.00"
 
 def filter_shopify_product(product, quantity, store_url):
     """
@@ -36,18 +43,13 @@ def filter_shopify_product(product, quantity, store_url):
     """
     handle = product.get("handle", "")
     variants = product.get("variants") or []
-    price = product.get("price")
+    price = cents_to_dollars(product.get("price"))
     if price is None and variants:
-        price = variants[0].get("price")
-
-    try:
-        formatted_price = f"${Decimal(str(price or 0)):,.2f}"
-    except (InvalidOperation, ValueError):
-        formatted_price = f"${price}" if price else "$0.00"
+        price = cents_to_dollars(variants[0].get("price"))
 
     return {
         "Title": product.get("title"),
         "Quantity": quantity,
         "Link": f"{store_url.rstrip('/')}/products/{quote(handle, safe='')}" if handle else None,
-        "Price": formatted_price,
+        "Price": price,
     }
