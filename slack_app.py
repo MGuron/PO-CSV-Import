@@ -127,8 +127,6 @@ def append_products_to_sheet(results):
     }
     first_column = min(field_columns.values())
     last_column = max(field_columns.values())
-    next_row = len(worksheet.get_all_values()) + 1
-    final_row = next_row + len(results) - 1
 
     def column_letter(column_number):
         letters = ""
@@ -137,8 +135,7 @@ def append_products_to_sheet(results):
             letters = chr(65 + remainder) + letters
         return letters
 
-    worksheet.update(
-        f"{column_letter(first_column)}{next_row}:{column_letter(last_column)}{final_row}",
+    worksheet.append_rows(
         [
             [
                 next(
@@ -154,6 +151,8 @@ def append_products_to_sheet(results):
             for result in results
         ],
         value_input_option="USER_ENTERED",
+        insert_data_option="INSERT_ROWS",
+        table_range=f"{column_letter(first_column)}:{column_letter(last_column)}",
     )
 
 #Support Slack's file input state shape while keeping validation explicit.
